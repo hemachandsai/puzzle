@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Puzzle 1</title>
+    <link rel="stylesheet" href="./style.css">
+    <link rel="stylesheet" data-name="vs/editor/editor.main"
+        href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs/editor/editor.main.min.css">
+</head>
+
+<body>
+    <main>
+        <section>
+            <h2>Puzzle 1</h2>
+            <p> A JS based puzzle on logical operators. Also involves some TS pratice</p>
+        </section>
+        <section class="code-block">
+            <div id="code-editor"></div>
+        </section>
+        <section>
+            <button class="submit-button" onclick="validateSolution()" disabled>SUBMIT</button>
+        </section>
+    </main>
+
+
+    <script>
+        function getFile(fileName) {
+            return fetch(fileName)
+                .then(data => data.text())
+        }
+
+        function validateSolution() {
+            let jsCode = window.ts.transpile(window.editor.getValue());
+            const finalFunc = new Function(jsCode + "return isActiveMonth;");
+            const testFunc = new Function(window.testSolution + "return evaluateCode;")
+            if (testFunc()(finalFunc())) {
+                const emailAddress = prompt("Puzzle is solved!! Please enter your tricon email address");
+            } else {
+                alert("Solution is wrong. Please try again!!")
+            }
+        }
+
+        (async () => {
+            const problemData = await getFile("problem.ts");
+            const timerId = setInterval(() => {
+                if (window.editor) {
+                    window.editor.getModel().setValue(problemData);
+                    clearInterval(timerId);
+                }
+            }, 500)
+            window.testSolution = await getFile("test.ts");
+        })()
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs/loader.min.js"></script>
+    <script>
+        require.config({
+            paths: {
+                'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs'
+            }
+        });
+        require(["vs/editor/editor.main"], function () {
+            window.editor = monaco.editor.create(document.getElementById('code-editor'), {
+                value: '',
+                language: 'typescript',
+                theme: 'vs-dark'
+            });
+            window.editor.onDidChangeModelDecorations(() => {
+
+                const model = this.editor.getModel();
+
+                if (model === null || model.getModeId() !== "typescript")
+                    return;
+
+                const owner = model.getModeId();
+                const markers = monaco.editor.getModelMarkers({
+                    owner
+                });
+                let submitButtonRef = document.querySelector(".submit-button");
+                let errorExists = false;
+                markers.map((marker) => {
+                    if (marker.severity > 7) errorExists = true;
+                })
+                if (errorExists) {
+                    submitButtonRef.disabled = true;
+                } else {
+                    submitButtonRef.disabled = false;
+                }
+            });
+            document.querySelector(".submit-button").disabled = false;
+        });
+    </script>
+    <script src="https://unpkg.com/typescript@latest/lib/typescriptServices.js"></script>
+</body>
+
+</html>
